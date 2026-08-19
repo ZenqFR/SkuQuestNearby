@@ -36,6 +36,15 @@ local UNKNOWN_DISTANCE = NS.UNKNOWN_DISTANCE
 
 local LABEL_OBJECTIVE = Sku.deEn and Sku.deEn("Ziel", "objective", "objectif") or "objectif"
 local LABEL_TURNIN = Sku.deEn and Sku.deEn("Abgabe", "turn in", "à rendre") or "à rendre"
+-- [2026-08-19] "Je suis près du donneur... mais l'objectif n'est pas
+-- terminé... la distance me montre le PNJ donneur" -- the quest-giver
+-- fallback (Proximity.lua's own FALLBACK_SORT_PENALTY comment has the full
+-- story) reports a REAL position, but it is NOT the actual unfinished
+-- objective, just the closest thing this addon could find any position
+-- for at all. Said explicitly in the label now so a nearby small distance
+-- is never mistaken for "the objective is basically done" when it's really
+-- "here's the quest giver, the real objective is still unresolved".
+local LABEL_APPROX = Sku.deEn and Sku.deEn("Questgeber, ungefähr", "quest giver, approximate", "PNJ donneur, approximatif") or "PNJ donneur, approximatif"
 
 local function FormatObjectiveLabel(aItem)
 	local tParts = {}
@@ -43,6 +52,9 @@ local function FormatObjectiveLabel(aItem)
 		tParts[#tParts + 1] = string.format("%dm", math.floor(aItem.distance))
 	end
 	tParts[#tParts + 1] = aItem.ready and LABEL_TURNIN or LABEL_OBJECTIVE
+	if aItem.usedGiverFallback then
+		tParts[#tParts + 1] = LABEL_APPROX
+	end
 	local tDiff = aItem.level and DifficultyLabel(aItem.level)
 	if tDiff then tParts[#tParts + 1] = tDiff end
 	return aItem.title .. " (" .. table.concat(tParts, ", ") .. ")"

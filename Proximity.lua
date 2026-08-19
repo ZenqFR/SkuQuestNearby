@@ -38,6 +38,25 @@ NS.DifficultyLabel = DifficultyLabel
 local UNKNOWN_DISTANCE = 999999
 NS.UNKNOWN_DISTANCE = UNKNOWN_DISTANCE
 
+-- [2026-08-19] "Je suis près du donneur ou du livreur, mais l'objectif n'est
+-- pas terminé -- la distance la plus proche me montre le PNJ donneur/
+-- livreur" -- the quest-giver fallback added in 0.3.0 (see ScanQuestObjectives
+-- below) reports a REAL position, but it is NOT the actual unfinished
+-- objective -- it's just the closest thing this addon could find ANY
+-- position for. Standing near a quest hub (several NPCs at once) made every
+-- one of those fallback quests look like "the closest thing to do right
+-- now" purely because the giver happens to be nearby, even though nothing
+-- can actually be progressed by standing there -- outranking quests with a
+-- REAL, resolved, actionable objective distance that happened to be
+-- further away. This penalty keeps a fallback-resolved entry sorting BELOW
+-- every genuinely-resolved objective/turn-in distance (so real progress
+-- opportunities are never buried under misleading "nearby" giver stops),
+-- while still sorting well above the fully-unknown sentinel (so it's never
+-- silently hidden at the very bottom either). Safely larger than any
+-- realistic in-game distance, safely smaller than UNKNOWN_DISTANCE.
+local FALLBACK_SORT_PENALTY = 500000
+NS.FALLBACK_SORT_PENALTY = FALLBACK_SORT_PENALTY
+
 -- Player position + the "area id" Sku's own quest code uses to index
 -- SkuDB spawn tables (confirmed by reading SkuQuest:GetUnsortedAvailableQuestsTable
 -- and SkuQuest:GetResultingWps directly -- both key spawns by this same
@@ -219,10 +238,12 @@ local function ScanQuestObjectives(aCtx)
 				-- done), just borrows a position. Not attempted for already-
 				-- complete quests -- finishedBy is already the primary
 				-- source there, nothing left to fall back to.
+				local tUsedFallback = false
 				if not tDist and not tReady then
 					local tFallbackDist, tFallbackWhy = ResolveClosestDistance(aCtx, tQuestID, tData[SkuDB.questKeys["startedBy"]])
 					if tFallbackDist then
 						tDist = tFallbackDist
+						tUsedFallback = true
 						tWhy = "objective unresolved (" .. tostring(tWhy) .. "), used quest-giver fallback"
 					else
 						tWhy = tostring(tWhy) .. "; quest-giver fallback also failed (" .. tostring(tFallbackWhy) .. ")"
@@ -233,12 +254,18 @@ local function ScanQuestObjectives(aCtx)
 				-- so a next /reload shows real data instead of another guess.
 				Log("ScanQuestObjectives: questID=%d ('%s') ready=%s dist=%s%s", tQuestID, tostring(tTitle), tostring(tReady),
 					tDist and string.format("%.1f", tDist) or "nil", tWhy and (" (" .. tWhy .. ")") or "")
-				table.insert(tList, { questId = tQuestID, title = tTitle, level = tLevel, distance = tDist or UNKNOWN_DISTANCE, ready = tReady })
+				local tDistance = tDist or UNKNOWN_DISTANCE
+				-- [2026-08-19] usedGiverFallback quests sort behind every REAL
+				-- objective/turn-in distance -- see FALLBACK_SORT_PENALTY's own
+				-- comment above. distance (shown/spoken) stays the true value;
+				-- sortDistance (sort key only) is the one with the penalty.
+				local tSortDistance = tUsedFallback and (tDistance + FALLBACK_SORT_PENALTY) or tDistance
+				table.insert(tList, { questId = tQuestID, title = tTitle, level = tLevel, distance = tDistance, sortDistance = tSortDistance, ready = tReady, usedGiverFallback = tUsedFallback })
 			end)
 			if not tOk then Log("ScanQuestObjectives: questID=%d THREW: %s", tQuestID, tostring(tErr)) end
 		end
 	end
-	table.sort(tList, function(a, b) return a.distance < b.distance end)
+	table.sort(tList, function(a, b) return a.sortDistance < b.sortDistance end)
 	Log("ScanQuestObjectives: %d quest(s) total.", #tList)
 	return tList
 end
