@@ -2,7 +2,7 @@
 ## Title: Sku Quest Nearby
 ## Notes: Ajoute deux entrées dans le menu Quêtes de Sku, à côté de "Quêtes actuelles" et "Base de données des quêtes" : "Objectifs de quêtes proches" (une liste unique, quêtes en cours + prêtes à rendre mélangées, triées par distance à l'objectif ou au PNJ de livraison) et "Quêtes à accepter à proximité" (triée par distance au donneur), avec le même détail de sous-menu et la même lecture Shift+flèche du bas que les quêtes actuelles. Toggle depuis Local -> Settings -> Module -> Features. Companion addon, ne fait pas partie de Sku officiel.
 ## Author: ZenqFR (built with Claude Code)
-## Version: 0.3.3
+## Version: 0.3.4
 ## Dependencies: Sku
 ## SavedVariables: SkuQuestNearbyLog
 

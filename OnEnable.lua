@@ -11,27 +11,45 @@ function SkuQuestNearby:OnEnable()
 
 	self:RegisterChatCommand("sqn", "SlashCommand")
 
+	-- [2026-08-22] "assure-toi qu'une version anglaise de chaquns des
+	-- addons est disponible" -- this activation line hardcoded the FRENCH
+	-- menu path ("Quêtes -> Objectifs de quêtes proches") into ALL THREE
+	-- language branches, including the English and German ones. Sku's own
+	-- root Quest menu label (confirmed via Sku/locales/*.lua: L["Quests"])
+	-- is "Quests" in both DE and EN, "Quêtes" only in FR -- and this
+	-- addon's own submenu label is the same `LABEL_OBJECTIVES_ROOT` triple
+	-- Menu.lua's own InstallMenuEntry already builds (module-local there,
+	-- so rebuilt inline here rather than exported just for this one line).
+	local tParentMenu = Sku.deEn and Sku.deEn("Quests", "Quests", "Quêtes") or "Quêtes"
+	local tSubName = Sku.deEn and Sku.deEn("Nahe Questziele", "Nearby quest objectives", "Objectifs de quêtes proches") or "Objectifs de quêtes proches"
 	print("|cff00ff00SkuQuestNearby|r: " ..
 		(Sku.deEn and Sku.deEn(
-			"aktiv. Menü: Quêtes -> Objectifs de quêtes proches.",
-			"active. Menu: Quêtes -> Objectifs de quêtes proches.",
-			"actif. Menu : Quêtes -> Objectifs de quêtes proches.")
-		or "actif. Menu : Quêtes -> Objectifs de quêtes proches."))
+			"aktiv. Menü: " .. tParentMenu .. " -> " .. tSubName .. ".",
+			"active. Menu: " .. tParentMenu .. " -> " .. tSubName .. ".",
+			"actif. Menu : " .. tParentMenu .. " -> " .. tSubName .. ".")
+		or "actif. Menu : " .. tParentMenu .. " -> " .. tSubName .. "."))
 	Log("OnEnable end.")
 end
 
 -- /sqn -- for testing/diagnostics: dumps the list sizes to chat without
 -- going through the menu.
+-- [2026-08-22] Was hardcoded French-only with no Sku.deEn wrapper at all --
+-- a real localization gap, found during the same audit as OnEnable's
+-- activation-message bug above.
 function SkuQuestNearby:SlashCommand(aMsg)
 	local tCtx = NS.GetPlayerContext()
 	if not tCtx then
-		print("|cff80c0ffSkuQuestNearby|r: position inconnue.")
+		print("|cff80c0ffSkuQuestNearby|r: " .. (Sku.deEn and Sku.deEn(
+			"Position unbekannt.", "Unknown position.", "Position inconnue.") or "Position inconnue."))
 		return
 	end
 	local tObjectives = NS.ScanQuestObjectives(tCtx)
 	local tAvailable = NS.ScanAvailableToAccept()
-	print(string.format("|cff80c0ffSkuQuestNearby|r: %d objectif(s) de quete, %d a accepter (zone actuelle).",
-		#tObjectives, #tAvailable))
+	print("|cff80c0ffSkuQuestNearby|r: " .. (Sku.deEn and Sku.deEn(
+		string.format("%d Questziel(e), %d anzunehmen (aktuelle Zone).", #tObjectives, #tAvailable),
+		string.format("%d quest objective(s), %d to accept (current zone).", #tObjectives, #tAvailable),
+		string.format("%d objectif(s) de quête, %d à accepter (zone actuelle).", #tObjectives, #tAvailable))
+	or string.format("%d objectif(s) de quête, %d à accepter (zone actuelle).", #tObjectives, #tAvailable)))
 end
 
 function SkuQuestNearby:OnDisable()

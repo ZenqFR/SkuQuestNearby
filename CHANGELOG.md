@@ -2,7 +2,12 @@
 
 All notable changes to SkuQuestNearby are documented here.
 
-## [Unreleased] — 0.3.3
+## [0.3.4]
+
+### Fixed
+- **Localization audit found a real English/German gap**, checked directly rather than assumed after the user asked to confirm an English version is genuinely available: the activation message printed on login hardcoded the FRENCH menu path ("Quêtes -> Objectifs de quêtes proches") into all three language branches, so an English or German client saw their own sentence with French menu names stitched in (Sku's own root Quest menu is actually "Quests" in both those languages, only "Quêtes" in French). `/sqn`'s own output had no localization at all -- always French regardless of client language. Both now use the same per-language labels the menu itself already displays.
+
+## [0.3.3]
 
 ### Fixed
 - **Misleading sort order when a quest's real objective can't be resolved.** "Objectifs de quêtes proches" falls back to showing the quest giver's own position when an in-progress quest's real objective can't be located (see 0.3.0) — a real position, but not the actual unfinished objective. Standing near a quest hub (several NPCs at once) made every quest using that fallback look like "the closest thing to do right now" purely because its giver happened to be nearby, even outranking quests with a REAL, resolved, actionable objective distance that was genuinely further away. Fallback-resolved entries now sort behind every entry with a real resolved distance (still shown, never hidden — just no longer able to bury an actionable objective under a merely-nearby giver). The label also now says so explicitly (e.g. "20m, objectif, PNJ donneur, approximatif") so a small distance is never mistaken for "the objective is basically done" when it's really "here's the quest giver, the real objective is still unresolved."
