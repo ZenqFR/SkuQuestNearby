@@ -6,20 +6,21 @@ Sku already has "Quêtes actuelles" (your quest log, unsorted) and "Questdatenba
 
 ## What it does
 
-Two new entries, right next to Sku's own "Quêtes actuelles" / "Questdatenbank" in the Quêtes menu:
+One new entry, right next to Sku's own "Quêtes actuelles" / "Questdatenbank" in the Quêtes menu:
 
 - **"Objectifs de quêtes proches"** — every quest currently in your log, one entry each, sorted by distance to whatever matters right now: the nearest unresolved objective for a quest still in progress, or the turn-in NPC/object for one that's ready to hand in. In-progress and ready-to-turn-in quests are mixed into one single list (not split into separate categories) so the closest thing to do is always at the top, whatever kind of "thing" it is. Each entry's label says which kind it is and how far ("1315m, objectif" / "82m, à rendre").
-- **"Quêtes à accepter à proximité"** — quests you could pick up nearby, sorted by distance to the giver. Reuses Sku's own `Questdatenbank` computation rather than reimplementing quest-availability logic.
-- **Full sub-menu detail on both**, identical to "Quêtes actuelles": Annahme/Ziel/Abgabe, pre-requisite quests, sharing, sending to chat.
+- **Full sub-menu detail**, identical to "Quêtes actuelles": Annahme/Ziel/Abgabe, pre-requisite quests, sharing, sending to chat.
 - **Shift+DownArrow reads the quest description**, exactly like "Quêtes actuelles" does.
 - Distance resolution is broad, not just "objective in your current zone": item-collection objectives are traced back to their drop sources (creature/object/vendor), creature/object targets are searched across every zone on your current continent (not just the one you're standing in), and a quest whose real objective genuinely can't be located falls back to showing distance to the quest giver instead of nothing at all.
+
+*(An earlier version also added a second "Quêtes à accepter à proximité" entry — removed, since Sku's own `Questdatenbank → Start in Zone → By distance` already does exactly that, out of the box, with no addon needed.)*
 
 ## How it works
 
 - Toggle from Sku's own **Features** menu (Local → Settings → Module → Features → "Quêtes proches"). Inert with zero effect if disabled.
-- Built almost entirely on `SkuQuest`'s own public methods rather than reimplementing quest-data parsing: `GetQuestTargetIds` (resolve a quest's objective/turn-in/giver into a target type + ids), `CreateQuestSubmenu` (the exact same Annahme/Ziel/Abgabe detail menu "Quêtes actuelles" builds), `GetTTSText`/`GetQuestDataStringFromDB` (the same spoken description text), `GetUnsortedAvailableQuestsTable` (the "à accepter" list). Positions come from Sku's own bundled `SkuDB` quest/NPC/object database (a translated, schema-compatible data port — no dependency on Questie or GatherMate2).
-- Injects its two menu entries directly into Sku's own "Quêtes" root menu via `hooksecurefunc(SkuQuest, "MenuBuilder", ...)`, run right after Sku's own menu has built itself — additive only, never touches or replaces anything Sku already puts there.
-- Ships a self-diagnostic log (`/sqnlog`) and a `SkuQuestNearbyLog` SavedVariable, plus `/sqn` for a quick chat-only summary of list sizes without opening the menu.
+- Built almost entirely on `SkuQuest`'s own public methods rather than reimplementing quest-data parsing: `GetQuestTargetIds` (resolve a quest's objective/turn-in/giver into a target type + ids), `CreateQuestSubmenu` (the exact same Annahme/Ziel/Abgabe detail menu "Quêtes actuelles" builds), `GetTTSText` (the same spoken description text). Positions come from Sku's own bundled `SkuDB` quest/NPC/object database (a translated, schema-compatible data port — no dependency on Questie or GatherMate2).
+- Injects its menu entry directly into Sku's own "Quêtes" root menu via `hooksecurefunc(SkuQuest, "MenuBuilder", ...)`, run right after Sku's own menu has built itself — additive only, never touches or replaces anything Sku already puts there.
+- Ships a self-diagnostic log (`/sqnlog`) and a `SkuQuestNearbyLog` SavedVariable, plus `/sqn` for a quick chat-only summary of the list size without opening the menu.
 
 ## Requirements
 

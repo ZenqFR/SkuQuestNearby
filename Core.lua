@@ -4,14 +4,23 @@
 -- Optional companion addon for Sku (screen-reader accessibility addon).
 -- Adds an "Objectifs de quêtes proches" entry to Sku's own Shift+F1 menu,
 -- alongside its native "Quêtes actuelles" and "Base de données des quêtes":
--- three lists (quêtes en cours / quêtes à rendre / quêtes à accepter), each
--- sorted by distance to the relevant target (next objective, turn-in NPC,
--- or quest-giver NPC) instead of Sku's own default order.
+-- one flat list of your active quest log (quêtes en cours + quêtes à
+-- rendre together), sorted by distance to the relevant target (next
+-- objective or turn-in NPC) instead of Sku's own default order.
+--
+-- [2026-08-22, REMOVED] A third list, "quêtes à accepter à proximité", used
+-- to live here too -- removed once the user pointed out Sku's OWN native
+-- "Questdatenbank" menu already offers the exact same distance-sorted
+-- "quests I could pick up nearby" list out of the box (SkuQuest/Options.lua's
+-- "Questdatenbank" -> "Start in Zone" -> "By distance", built on the SAME
+-- SkuQuest:GetUnsortedAvailableQuestsTable() this addon's own removed
+-- ScanAvailableToAccept just wrapped a presentation layer around). Pure
+-- duplication -- see Menu.lua's own removal comment for the full trace.
 --
 -- Built on TOP of Sku's own quest infrastructure rather than duplicating
 -- it: this addon reads SkuDB (Sku's own bundled quest/NPC/object database
 -- with spawn positions -- confirmed present, no Questie dependency needed)
--- and calls three of SkuQuest's own PUBLIC methods directly:
+-- and calls Sku's own PUBLIC methods directly:
 --   SkuQuest:GetQuestTargetIds(questID, aList)   -- resolves a
 --       startedBy/objectives/finishedBy sub-table into (targetIds, "creature"
 --       |"object"|"item"|"waypoint") -- the exact same resolution Sku's own
@@ -22,11 +31,6 @@
 --       Sku's own quest log" -- built for exactly this kind of use.
 --   SkuQuest:GetTTSText(questID)                 -- same spoken objective
 --       text "Aktuelle Quests" uses on OnEnter.
---   SkuQuest:GetUnsortedAvailableQuestsTable()   -- Sku's own already-
---       working "quests I could pick up in this zone" computation (level/
---       race/class/chain-prerequisite filtering already done correctly),
---       reused as-is for the "quêtes à accepter" list rather than
---       reimplemented.
 --
 -- This addon's OWN job is narrow: for quêtes en cours/à rendre, resolve a
 -- distance for each quest log entry (creature/object target only for v1 --

@@ -44,12 +44,11 @@ function SkuQuestNearby:SlashCommand(aMsg)
 		return
 	end
 	local tObjectives = NS.ScanQuestObjectives(tCtx)
-	local tAvailable = NS.ScanAvailableToAccept()
 	print("|cff80c0ffSkuQuestNearby|r: " .. (Sku.deEn and Sku.deEn(
-		string.format("%d Questziel(e), %d anzunehmen (aktuelle Zone).", #tObjectives, #tAvailable),
-		string.format("%d quest objective(s), %d to accept (current zone).", #tObjectives, #tAvailable),
-		string.format("%d objectif(s) de quête, %d à accepter (zone actuelle).", #tObjectives, #tAvailable))
-	or string.format("%d objectif(s) de quête, %d à accepter (zone actuelle).", #tObjectives, #tAvailable)))
+		string.format("%d Questziel(e) (aktuelle Zone).", #tObjectives),
+		string.format("%d quest objective(s) (current zone).", #tObjectives),
+		string.format("%d objectif(s) de quête (zone actuelle).", #tObjectives))
+	or string.format("%d objectif(s) de quête (zone actuelle).", #tObjectives)))
 end
 
 function SkuQuestNearby:OnDisable()

@@ -2,6 +2,11 @@
 
 All notable changes to SkuQuestNearby are documented here.
 
+## [0.3.5]
+
+### Removed
+- **"Quêtes à accepter à proximité"** — the user pointed out Sku's own native `Questdatenbank` menu already offers this exact same distance-sorted "quests I could pick up nearby" list, out of the box (`Questdatenbank → Start in Zone → By distance`, built on the same `SkuQuest:GetUnsortedAvailableQuestsTable()` this entry just wrapped a presentation layer around). Confirmed by reading that Sku code directly. Pure duplication, removed — this addon is now scoped to the one thing Sku genuinely doesn't already do: sorting your **already-accepted** quests' objectives by distance.
+
 ## [0.3.4]
 
 ### Fixed

@@ -1,18 +1,29 @@
--- SkuQuestNearby/Menu.lua -- injects two entries directly into Sku's own
+-- SkuQuestNearby/Menu.lua -- injects one entry directly into Sku's own
 -- "Quêtes" root menu (the same one hosting "Aktuelle Quests"/
 -- "Questdatenbank"): "Objectifs de quêtes proches" (one flat, distance-
 -- sorted list -- both in-progress objectives and ready-to-turn-in stops
--- together, per the user's explicit request to simplify away the earlier
--- 3-way split) and "Quêtes à accepter à proximité".
+-- together, per the user's explicit request to simplify away an earlier
+-- 3-way split).
 --
 -- [2026-08-19, SIMPLIFIED] Previously one root entry with three nested
 -- sub-lists (en cours / à rendre / à accepter). User feedback: the split
 -- itself wasn't working ("j'ai des quêtes à rendre... qui sont dans quêtes
 -- en cours"), felt over-complicated, and didn't match Sku's own menu depth.
--- Flattened to two entries, each listing its quests DIRECTLY as children
--- (no intermediate grouping level) -- same depth as Sku's own "Aktuelle
--- Quests" -> "Alle" -> quest, minus the "Alle" grouping step this addon
--- never needed in the first place.
+-- Flattened to two entries (this one plus a since-removed "Quêtes à
+-- accepter à proximité", see the 2026-08-22 REMOVED note below), each
+-- listing its quests DIRECTLY as children (no intermediate grouping level)
+-- -- same depth as Sku's own "Aktuelle Quests" -> "Alle" -> quest, minus
+-- the "Alle" grouping step this addon never needed in the first place.
+--
+-- [2026-08-22, REMOVED] "Quêtes à accepter à proximité" -- user pointed
+-- out Sku's own native "Questdatenbank" menu ALREADY has this, distance-
+-- sorted, out of the box: SkuQuest/Options.lua's own "Questdatenbank" ->
+-- "Start in Zone" -> "By distance" entry sorts `GetUnsortedAvailableQuestsTable()`
+-- by distance -- the EXACT SAME function this addon's own (now-removed)
+-- `ScanAvailableToAccept`/`BuildAvailableChildren` just wrapped a
+-- presentation layer around. Confirmed by reading that Sku code directly,
+-- not assumed. Pure duplication, removed rather than kept as a second way
+-- to reach the identical list.
 --
 -- Sku registers that whole menu declaratively: SkuZOptions/SkuMenu.lua does
 -- `SkuMenu:RegisterModule("SkuQuest", { ..., build = function(entry)
@@ -57,17 +68,6 @@ local function FormatObjectiveLabel(aItem)
 	end
 	local tDiff = aItem.level and DifficultyLabel(aItem.level)
 	if tDiff then tParts[#tParts + 1] = tDiff end
-	return aItem.title .. " (" .. table.concat(tParts, ", ") .. ")"
-end
-
-local function FormatAcceptLabel(aItem)
-	local tParts = {}
-	if aItem.distance and aItem.distance < UNKNOWN_DISTANCE then
-		tParts[#tParts + 1] = string.format("%dm", math.floor(aItem.distance))
-	end
-	local tDiff = aItem.level and DifficultyLabel(aItem.level)
-	if tDiff then tParts[#tParts + 1] = tDiff end
-	if #tParts == 0 then return aItem.title end
 	return aItem.title .. " (" .. table.concat(tParts, ", ") .. ")"
 end
 
@@ -117,7 +117,6 @@ end
 
 local EMPTY_LABEL = Sku.deEn and Sku.deEn("Keine", "None", "Aucune") or "Aucune"
 local LABEL_OBJECTIVES_ROOT = Sku.deEn and Sku.deEn("Nahe Questziele", "Nearby quest objectives", "Objectifs de quêtes proches") or "Objectifs de quêtes proches"
-local LABEL_AVAILABLE_ROOT = Sku.deEn and Sku.deEn("Nahe annehmbare Quests", "Nearby quests to accept", "Quêtes à accepter à proximité") or "Quêtes à accepter à proximité"
 
 local function BuildObjectivesChildren(aParent)
 	local tCtx = NS.GetPlayerContext()
@@ -174,36 +173,6 @@ local function BuildObjectivesChildren(aParent)
 	end
 end
 
-local function BuildAvailableChildren(aParent)
-	local tList = NS.ScanAvailableToAccept()
-	if #tList == 0 then
-		SkuOptions:InjectMenuItems(aParent, { EMPTY_LABEL }, SkuGenericMenuItem)
-		return
-	end
-	local tNameCache = {}
-	for _, tItem in ipairs(tList) do
-		local tQuestID, tZoneID = tItem.questId, tItem.zoneId
-		local tLabel = Uniquify(tNameCache, FormatAcceptLabel(tItem))
-		local tEntry = SkuOptions:InjectMenuItems(aParent, { tLabel }, SkuGenericMenuItem)
-		tEntry.dynamic = true
-		-- Not-yet-accepted quests have no log-based progress to read --
-		-- same source Sku's own "Questdatenbank" list uses for this exact
-		-- case (SkuQuest:GetQuestDataStringFromDB), not GetTTSText.
-		tEntry.OnEnter = function(self)
-			local tOk, tText = pcall(SkuQuest.GetQuestDataStringFromDB, SkuQuest, tQuestID, tZoneID)
-			if tOk then
-				SkuOptions.currentMenuPosition.textFull = tText
-			else
-				Log("BuildAvailableChildren: OnEnter -- GetQuestDataStringFromDB THREW for questID=%d: %s", tQuestID, tostring(tText))
-			end
-		end
-		tEntry.BuildChildren = function(self)
-			local tOk, tErr = pcall(SkuQuest.CreateQuestSubmenu, SkuQuest, self, tQuestID)
-			if not tOk then Log("BuildAvailableChildren: CreateQuestSubmenu THREW for questID=%d: %s", tQuestID, tostring(tErr)) end
-		end
-	end
-end
-
 local function InstallMenuEntry()
 	if not SkuQuest.MenuBuilder then
 		Log("InstallMenuEntry: SkuQuest:MenuBuilder does not exist, skipped.")
@@ -216,11 +185,6 @@ local function InstallMenuEntry()
 			tObjectivesEntry.dynamic = true
 			tObjectivesEntry.sorting = true
 			tObjectivesEntry.BuildChildren = function(self2) BuildObjectivesChildren(self2) end
-
-			local tAvailableEntry = SkuOptions:InjectMenuItems(aParentEntry, { LABEL_AVAILABLE_ROOT }, SkuGenericMenuItem)
-			tAvailableEntry.dynamic = true
-			tAvailableEntry.sorting = true
-			tAvailableEntry.BuildChildren = function(self2) BuildAvailableChildren(self2) end
 		end)
 		if not tOk then Log("InstallMenuEntry hook: THREW: %s", tostring(tErr)) end
 	end)

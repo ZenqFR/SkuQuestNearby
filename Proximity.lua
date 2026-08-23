@@ -271,26 +271,11 @@ local function ScanQuestObjectives(aCtx)
 end
 NS.ScanQuestObjectives = ScanQuestObjectives
 
--- Wraps SkuQuest's own already-correct "available to pick up in this zone"
--- computation (level/race/class/chain-prerequisite filtering all already
--- handled there) rather than reimplementing it -- this addon only adds the
--- sort-and-present layer. Returns a list of {questId, title, distance, level, zoneId}.
-local function ScanAvailableToAccept()
-	local tOk, tUnsorted = pcall(SkuQuest.GetUnsortedAvailableQuestsTable, SkuQuest)
-	if not tOk or type(tUnsorted) ~= "table" then
-		Log("ScanAvailableToAccept: GetUnsortedAvailableQuestsTable THREW or returned non-table: %s", tostring(tUnsorted))
-		return {}
-	end
-	local tList = {}
-	for tName, tEntry in pairs(tUnsorted) do
-		-- tEntry = {distance, x, y, questId} -- see SkuQuest:GetUnsortedAvailableQuestsTable
-		local tDist, _, _, tQuestID = tEntry[1], tEntry[2], tEntry[3], tEntry[4]
-		local tLevel = SkuDB.questDataTBC[tQuestID] and SkuDB.questDataTBC[tQuestID][SkuDB.questKeys["questLevel"]]
-		local tOkZone, tZoneID = pcall(SkuQuest.GetQuestStartZoneId, SkuQuest, tQuestID)
-		table.insert(tList, { questId = tQuestID, title = tName, distance = tDist or UNKNOWN_DISTANCE, level = tLevel, zoneId = tOkZone and tZoneID or nil })
-	end
-	table.sort(tList, function(a, b) return a.distance < b.distance end)
-	Log("ScanAvailableToAccept: %d quest(s) available nearby.", #tList)
-	return tList
-end
-NS.ScanAvailableToAccept = ScanAvailableToAccept
+-- [2026-08-22, REMOVED] ScanAvailableToAccept (backed a "Quêtes à accepter
+-- à proximité" menu entry) -- user pointed out Sku's own native
+-- "Questdatenbank" menu already has this, distance-sorted, out of the box
+-- (SkuQuest/Options.lua's "Questdatenbank" -> "Start in Zone" -> "By
+-- distance" sorts the EXACT SAME SkuQuest:GetUnsortedAvailableQuestsTable()
+-- this function just wrapped a presentation layer around). Confirmed by
+-- reading that Sku code directly, not assumed. Pure duplication -- see
+-- Menu.lua's own removal comment for the full story.
